@@ -5,9 +5,6 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_write.h"
-
 // if the border of your window manager is getting into the img capture just
 // offset it here
 // this is for my i3 wm
