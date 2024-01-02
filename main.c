@@ -93,19 +93,19 @@ void on_record(GtkButton* widget ,GtkEntry* entry) {
         is_recording = true;
 
         gtk_button_set_label(widget,"Recording...");
-        gtk_widget_set_name(widget, "btn_recording");
+        gtk_widget_set_name(widget, "record_btn_recording");
 
 
 
         // disable window resizing 
         gtk_window_set_resizable(window,false);
 
-        pthread_create(&recording_thread,NULL,record,NULL);
+        // pthread_create(&recording_thread,NULL,record,NULL);
     } else {
         is_recording = false;
 
         gtk_button_set_label(widget,"Record!");
-        gtk_widget_set_name(widget, "btn_not_recording");
+        gtk_widget_set_name(widget, "");
     }
 
 }
@@ -125,8 +125,12 @@ int main(int argc, char** argv) {
 
     window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_default_size((GtkWindow*)window,800,600);
+
+    gtk_widget_set_name(window,"window");
+
     g_signal_connect(GTK_WIDGET(window),"destory",G_CALLBACK(gtk_main_quit),NULL);
     g_signal_connect(GTK_WIDGET(window),"configure-event",G_CALLBACK(on_window_resize),NULL);
+
 
     // disable resizing window to stop window managers from making it fullscreen i3 does that 
     // dont worry i set later to true after showing the window
@@ -150,8 +154,6 @@ int main(int argc, char** argv) {
 
 
 
-
-
     // global container for layout stuff
     box = gtk_box_new(GTK_ORIENTATION_VERTICAL,0);    
     gtk_container_add(GTK_CONTAINER(window),box);
@@ -160,23 +162,50 @@ int main(int argc, char** argv) {
     top_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0);
     gtk_widget_set_name(top_box, "top_bar");
 
-
-
     GtkWidget* button = gtk_button_new_with_label("Record!");
-
-
     g_signal_connect(GTK_WIDGET(button),"clicked",G_CALLBACK(on_record),NULL);
-    gtk_box_pack_start((GtkBox*)top_box,button,false,true,0);
+    GtkStyleContext* btn_style_ctx = gtk_widget_get_style_context(button);
+    gtk_style_context_add_class(btn_style_ctx,"record_btn");
+    
+
+    // drop down menu to select output file type
+    GtkTreeModel* drop_down_model = gtk_list_store_new(1,G_TYPE_STRING);
+    GtkTreeIter drop_down_model_iter;
+    gtk_list_store_append(drop_down_model,&drop_down_model_iter);
+    gtk_list_store_set(drop_down_model,&drop_down_model_iter,0,"GIF",-1);
+    gtk_list_store_append(drop_down_model,&drop_down_model_iter);
+    gtk_list_store_set(drop_down_model,&drop_down_model_iter,0,"APNG",-1);
+
+    GtkWidget* drop_down = gtk_combo_box_new_with_model(drop_down_model);
+    g_object_unref(drop_down_model);
+
+    gtk_combo_box_set_active(GTK_COMBO_BOX(drop_down),0);
+    GtkCellRenderer * renderer = gtk_cell_renderer_text_new ();
+    gtk_cell_layout_pack_start (GTK_CELL_LAYOUT (drop_down), renderer, false);
+    gtk_cell_layout_set_attributes (GTK_CELL_LAYOUT (drop_down), renderer, "text", 0, NULL);    
+
+    // fps entry
+    GtkWidget* fps_entry = gtk_entry_new();
+    gtk_entry_set_width_chars(fps_entry,2);
+    gtk_entry_set_max_width_chars(fps_entry,3);
+    GtkWidget* fps_label = gtk_label_new("FPS:");
+    gtk_entry_set_text(fps_entry,"50");
+
+    GtkWidget* fps_container = gtk_grid_new();
+    gtk_grid_attach(fps_container,fps_entry,1,0,1,1);
+    gtk_grid_attach(fps_container,fps_label,0,0,1,1);
+    gtk_grid_set_column_spacing(fps_container,10);
+    
+    
+    
+
+
+    gtk_box_pack_start((GtkBox*)top_box,button,false,false,0);
+    gtk_box_pack_end((GtkBox*)top_box,drop_down,false,false,0);
+    gtk_box_pack_end((GtkBox*)top_box,fps_container,false,false,0);
+    // gtk_box_pack_end((GtkBox*)top_box,fps_label,false,false,0);
 
     gtk_box_pack_start((GtkBox*)box,top_box,false,true,0);
-
-
-
-    // maybe use canvas to draw stuff ??
-    GtkWidget* canvas = gtk_drawing_area_new();
-    gtk_widget_set_app_paintable(canvas, true);
-    g_signal_connect(GTK_WIDGET(canvas),"draw",G_CALLBACK(on_draw),NULL);
-    gtk_box_pack_start((GtkBox*)box,canvas,true,true,0);
 
 
 

@@ -1,14 +1,38 @@
+
+/* set window background color */
+/* when adding a header bar for some reason gets filled with default color */
+* {
+    background: rgba(0, 0, 0,0);
+}
+
 GtkButton {
     background-image: none;
     color: black;
 }
-
-
-#top_bar {
-    background-color: white;
+combobox {
+    margin-left: 20px;
+}
+combobox>window.popup *{
+    background: white;
+    color: black;
 }
 
 
-#btn_recording {
-    background: rgb(220, 220, 220);
+
+
+
+#top_bar {
+    background: white;
+    padding: 10px;
+}
+
+
+.record_btn { 
+    background: white;
+}
+
+#record_btn_recording {
+    background: rgb(200, 60, 60);
+    color: white;
+    border-color: white;
 }
