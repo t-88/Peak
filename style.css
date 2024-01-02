@@ -1,0 +1,17 @@
+GtkButton {
+    background-image: none;
+    color: black;
+}
+
+
+#top_bar {
+    background-color: white;
+}
+
+
+
+#btn_recording {
+    background: rgb(220, 220, 220);
+}
+#btn_not_recording {
+}

@@ -21,10 +21,36 @@ GtkWidget* box;
 GtkWidget* top_box;
 
 
+static const char* css_fp = "style.css";
+static bool is_recording = false;
 
-void on_record() {
+
+void load_css() {
+    // load css to use it for styling
+    // gtk uses css for some reason
+    
+    GtkCssProvider* css_provider;
+    css_provider = gtk_css_provider_new();
+
+    gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),css_provider,GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+
+    //TODO: i should take the error and handle it, instead of NULL there
+    gtk_css_provider_load_from_file(css_provider,g_file_new_for_path(css_fp),NULL);
+    g_object_unref(css_provider);
+}
+
+void on_record(GtkButton* widget ,GtkEntry* entry) {
+    if(!is_recording) {
+        gtk_button_set_label(widget,"Recording...");
+        gtk_widget_set_name(widget, "btn_recording");
+
+    } else {
+        gtk_button_set_label(widget,"Record!");
+        gtk_widget_set_name(widget, "btn_not_recording");
+    }
+
+    is_recording = !is_recording;
     int top_box_height = gtk_widget_get_allocated_height(top_box);
-
 
     int w , h;
     w = gtk_widget_get_allocated_width(window) - x_offset_right;
@@ -36,7 +62,6 @@ void on_record() {
     x += x_offset_left;
 
 
-
     GdkPixbuf* buf = gdk_pixbuf_new(GDK_COLORSPACE_RGB,true,8,w,h);
     buf = gdk_pixbuf_get_from_window(gdk_get_default_root_window(),x,y,w,h);
     gdk_pixbuf_save(buf,"img.png","png",NULL,NULL);
@@ -46,6 +71,8 @@ void on_draw(GtkWidget* widget,cairo_t* cr,gpointer* data) {
 
 int main(int argc, char** argv) {
     gtk_init(&argc,&argv);
+
+    load_css();
 
     window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_default_size((GtkWindow*)window,800,600);
@@ -75,12 +102,13 @@ int main(int argc, char** argv) {
 
     // top container
     top_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0);
-    GdkRGBA color = {1,1,1,1};
-    gtk_widget_override_background_color(top_box,GTK_STATE_FLAG_NORMAL,&color);
+    gtk_widget_set_name(top_box, "top_bar");
 
 
 
     GtkWidget* button = gtk_button_new_with_label("Record!");
+
+
     g_signal_connect(GTK_WIDGET(button),"clicked",G_CALLBACK(on_record),NULL);
     gtk_box_pack_start((GtkBox*)top_box,button,false,true,0);
 
