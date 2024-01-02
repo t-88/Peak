@@ -1,9 +1,25 @@
 #include <stdio.h>
 #include <stdbool.h>
+#include <pthread.h>
 #include <gtk-3.0/gtk/gtk.h>
-
 #include <X11/Xlib.h>
-#include <X11/Xutil.h>
+
+
+// types
+typedef struct ScreenRect {
+    int x ,y , w , h;
+} ScreenRect;
+
+
+
+
+
+
+static const char* css_fp = "style.css";
+static bool is_recording = false;
+static int cur_img_idx = 0;
+static pthread_t recording_thread;
+ScreenRect record_rect;
 
 
 // if the border of your window manager is getting into the img capture just
@@ -20,11 +36,6 @@ GtkWidget* window;
 GtkWidget* box;
 GtkWidget* top_box;
 
-
-static const char* css_fp = "style.css";
-static bool is_recording = false;
-
-
 void load_css() {
     // load css to use it for styling
     // gtk uses css for some reason
@@ -39,17 +50,24 @@ void load_css() {
     g_object_unref(css_provider);
 }
 
-void on_record(GtkButton* widget ,GtkEntry* entry) {
-    if(!is_recording) {
-        gtk_button_set_label(widget,"Recording...");
-        gtk_widget_set_name(widget, "btn_recording");
 
-    } else {
-        gtk_button_set_label(widget,"Record!");
-        gtk_widget_set_name(widget, "btn_not_recording");
+void take_screenshot(char* fp,ScreenRect rect) {
+    GdkPixbuf* buf = gdk_pixbuf_new(GDK_COLORSPACE_RGB,true,8,rect.w,rect.h);
+    buf = gdk_pixbuf_get_from_window(gdk_get_default_root_window(),rect.x,rect.y,rect.w,rect.h);
+    gdk_pixbuf_save(buf,fp,"png",NULL,NULL);
+}
+void* record() {
+    char file_name[256];
+    while (is_recording){
+        sprintf(file_name,"output/%d.png",cur_img_idx);
+        take_screenshot(file_name,record_rect);
+        cur_img_idx += 1;
     }
 
-    is_recording = !is_recording;
+    pthread_exit(EXIT_SUCCESS);
+}
+
+void on_record(GtkButton* widget ,GtkEntry* entry) {
     int top_box_height = gtk_widget_get_allocated_height(top_box);
 
     int w , h;
@@ -62,14 +80,31 @@ void on_record(GtkButton* widget ,GtkEntry* entry) {
     x += x_offset_left;
 
 
-    GdkPixbuf* buf = gdk_pixbuf_new(GDK_COLORSPACE_RGB,true,8,w,h);
-    buf = gdk_pixbuf_get_from_window(gdk_get_default_root_window(),x,y,w,h);
-    gdk_pixbuf_save(buf,"img.png","png",NULL,NULL);
+
+    if(!is_recording) {
+        is_recording = true;
+
+        gtk_button_set_label(widget,"Recording...");
+        gtk_widget_set_name(widget, "btn_recording");
+
+        record_rect.x = x; 
+        record_rect.y = y; 
+        record_rect.w = w; 
+        record_rect.h = h; 
+        pthread_create(&recording_thread,NULL,record,NULL);
+    } else {
+        is_recording = false;
+
+        gtk_button_set_label(widget,"Record!");
+        gtk_widget_set_name(widget, "btn_not_recording");
+    }
+
 }
 void on_draw(GtkWidget* widget,cairo_t* cr,gpointer* data) {
 }
 
 int main(int argc, char** argv) {
+    XInitThreads();
     gtk_init(&argc,&argv);
 
     load_css();
