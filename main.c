@@ -14,7 +14,6 @@ typedef struct ScreenRect {
 
 
 
-
 static const char* css_fp = "style.css";
 static bool is_recording = false;
 static int cur_img_idx = 0;
@@ -26,7 +25,7 @@ ScreenRect record_rect;
 // offset it here
 // this is for my i3 wm
 static const int x_offset_left = 2;
-static const int x_offset_right = 0;
+static const int x_offset_right = 2;
 static const int y_offset_top = 0;
 static const int y_offset_bottom = 0;
 
@@ -67,17 +66,26 @@ void* record() {
     pthread_exit(EXIT_SUCCESS);
 }
 
-void on_record(GtkButton* widget ,GtkEntry* entry) {
+void update_record_rect(int x , int y) {
     int top_box_height = gtk_widget_get_allocated_height(top_box);
 
-    int w , h;
-    w = gtk_widget_get_allocated_width(window) - x_offset_right;
-    h = gtk_widget_get_allocated_height(window) - y_offset_bottom - top_box_height;
+    record_rect.w = gtk_widget_get_allocated_width(window) - x_offset_right;
+    record_rect.h = gtk_widget_get_allocated_height(window) - y_offset_bottom - top_box_height;
 
-    int x , y;
-    gtk_window_get_position((GtkWindow*)window,&x,&y);
-    y += top_box_height + y_offset_top;
-    x += x_offset_left;
+
+    if(x == -1 && y == -1) {
+        gtk_window_get_position((GtkWindow*)window,&record_rect.x,&record_rect.y);
+    } else {
+        record_rect.x = x;
+        record_rect.y = y;
+    }
+
+    record_rect.x += x_offset_left;
+    record_rect.y += top_box_height + y_offset_top;
+}
+
+void on_record(GtkButton* widget ,GtkEntry* entry) {
+    update_record_rect(-1,-1);
 
 
 
@@ -87,10 +95,11 @@ void on_record(GtkButton* widget ,GtkEntry* entry) {
         gtk_button_set_label(widget,"Recording...");
         gtk_widget_set_name(widget, "btn_recording");
 
-        record_rect.x = x; 
-        record_rect.y = y; 
-        record_rect.w = w; 
-        record_rect.h = h; 
+
+
+        // disable window resizing 
+        gtk_window_set_resizable(window,false);
+
         pthread_create(&recording_thread,NULL,record,NULL);
     } else {
         is_recording = false;
@@ -103,15 +112,28 @@ void on_record(GtkButton* widget ,GtkEntry* entry) {
 void on_draw(GtkWidget* widget,cairo_t* cr,gpointer* data) {
 }
 
+
+
+void on_window_resize(GtkWindow* window, GdkEvent* event) {
+    update_record_rect(event->configure.x,event->configure.y);
+}
+
 int main(int argc, char** argv) {
     XInitThreads();
     gtk_init(&argc,&argv);
-
     load_css();
 
     window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_default_size((GtkWindow*)window,800,600);
+    g_signal_connect(GTK_WIDGET(window),"destory",G_CALLBACK(gtk_main_quit),NULL);
+    g_signal_connect(GTK_WIDGET(window),"configure-event",G_CALLBACK(on_window_resize),NULL);
+
+    // disable resizing window to stop window managers from making it fullscreen i3 does that 
+    // dont worry i set later to true after showing the window
     gtk_window_set_resizable((GtkWindow*)window,false);
+
+    
+
 
     GdkScreen *screen;
     GdkVisual *visual;
@@ -127,7 +149,6 @@ int main(int argc, char** argv) {
     }
 
 
-    g_signal_connect(GTK_WIDGET(window),"destory",G_CALLBACK(gtk_main_quit),NULL);
 
 
 
@@ -147,13 +168,13 @@ int main(int argc, char** argv) {
     g_signal_connect(GTK_WIDGET(button),"clicked",G_CALLBACK(on_record),NULL);
     gtk_box_pack_start((GtkBox*)top_box,button,false,true,0);
 
-
-
     gtk_box_pack_start((GtkBox*)box,top_box,false,true,0);
 
+
+
+    // maybe use canvas to draw stuff ??
     GtkWidget* canvas = gtk_drawing_area_new();
     gtk_widget_set_app_paintable(canvas, true);
-
     g_signal_connect(GTK_WIDGET(canvas),"draw",G_CALLBACK(on_draw),NULL);
     gtk_box_pack_start((GtkBox*)box,canvas,true,true,0);
 
@@ -162,6 +183,7 @@ int main(int argc, char** argv) {
 
     
     gtk_widget_show_all(window);
+    gtk_window_set_resizable((GtkWindow*)window,true);
     gtk_main();
 
     return 0;
