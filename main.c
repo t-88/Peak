@@ -5,6 +5,7 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
+
 // if the border of your window manager is getting into the img capture just
 // offset it here
 // this is for my i3 wm
@@ -34,6 +35,11 @@ void on_record() {
     y += top_box_height + y_offset_top;
     x += x_offset_left;
 
+
+
+    GdkPixbuf* buf = gdk_pixbuf_new(GDK_COLORSPACE_RGB,true,8,w,h);
+    buf = gdk_pixbuf_get_from_window(gdk_get_default_root_window(),x,y,w,h);
+    gdk_pixbuf_save(buf,"img.png","png",NULL,NULL);
 }
 void on_draw(GtkWidget* widget,cairo_t* cr,gpointer* data) {
 }
