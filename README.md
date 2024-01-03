@@ -14,7 +14,6 @@ Peak is a simple screen capture application for **linux**.
 # Quick Start
 ```bash
     $ ./run.sh
-    $ ./make_gif.sh
 ```
 
 
