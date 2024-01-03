@@ -299,8 +299,6 @@ int main(int argc, char** argv) {
 
     
     gtk_widget_show_all(window);
-    gdk_window_set_events(gtk_widget_get_window(GTK_WIDGET(window)),GDK_ALL_EVENTS_MASK);
-
 
     gtk_window_set_resizable((GtkWindow*)window,true);
     gtk_main();

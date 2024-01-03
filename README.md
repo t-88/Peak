@@ -1,12 +1,13 @@
-# Peak
-Peak is a simple screen capture application for **linux**.
+# peak
+peak is a simple screen capture application for **linux**.
+also use [Peek](https://github.com/phw/peek)
 
 ### Output
-<img src="./peak_output.gif" width=400 alt="Peak output" />    
+<img src="./peak_output.gif" width=400 alt="peak output" />    
 
 
 # TODO
-- make events propagate like ![Peek](https://github.com/phw/peek)
+- make events propagate like [Peek](https://github.com/phw/peek)
 - less gif size
 
 # Requiments
