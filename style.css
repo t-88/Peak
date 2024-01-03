@@ -1,10 +1,4 @@
 
-/* set window background color */
-/* when adding a header bar for some reason gets filled with default color */
-* {
-    background: rgba(0, 0, 0,0);
-}
-
 GtkButton {
     background-image: none;
     color: black;
@@ -24,7 +18,6 @@ combobox>window.popup *{
 #top_bar {
     background: white;
     padding: 10px;
-    width: fit-content;
 }
 
 #timer_label_not_recording {
@@ -36,8 +29,6 @@ combobox>window.popup *{
 
 .record_btn { 
     background: white;
-    width: 100px;
-    height: 100px;
 }
 
 #record_btn_recording {

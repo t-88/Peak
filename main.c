@@ -40,7 +40,7 @@ GtkWidget* top_box;
 GtkWidget* timer_label;
 GtkWidget* fps_entry;
 GtkWidget* drop_down;
-
+GtkWidget* record_button;
 
 time_t start_record_time;
 struct tm* time_info;
@@ -119,13 +119,23 @@ void update_record_rect(int x , int y) {
     record_rect.x += x_offset_left;
     record_rect.y += top_box_height + y_offset_top;
 }
-void make_gif() {
+void make_gif(char* fp) {
     // just run the ./make_gif.sh with the fps argument
     char cmd_str[64];
-    sprintf(cmd_str,"./make_gif.sh %d",fps);   
+    sprintf(cmd_str,"./make_gif.sh %s %d",fp,fps);   
     system(cmd_str); 
 }
 
+char* get_save_folder_path() {
+    GtkWidget* file_broswer;
+    file_broswer = gtk_file_chooser_dialog_new("Select Save Folder",window,GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER,"Select",GTK_RESPONSE_APPLY,NULL);
+    gtk_dialog_run(file_broswer);
+    char* fp;
+    GtkFileChooser* chooser = GTK_FILE_CHOOSER(file_broswer);
+    fp = gtk_file_chooser_get_current_folder(file_broswer);
+    gtk_widget_destroy(file_broswer);
+    return fp;
+}
 
 void on_record(GtkButton* widget ,GtkEntry* entry) {
     update_record_rect(-1,-1);
@@ -169,17 +179,28 @@ void on_record(GtkButton* widget ,GtkEntry* entry) {
         gtk_window_set_resizable(window,true);
 
 
-        pthread_create(&thread_ffmpeg_processing,NULL,make_gif,NULL);
 
+        char* fp = get_save_folder_path();
+        pthread_create(&thread_ffmpeg_processing,NULL,make_gif,fp);
     }
 
 }
 
 
 
+gboolean on_key_press(GtkWidget* widget,GdkEventKey* event) {
+    if(!is_recording && event->keyval == GDK_KEY_Escape) {
+        gtk_main_quit();
+    }
+    if(event->keyval == GDK_KEY_space && event->type == GDK_KEY_RELEASE) {
+        gtk_button_clicked(record_button);
+    }
 
-void on_window_resize(GtkWindow* window, GdkEvent* event) {
+    return FALSE;
+}
+gboolean on_window_move(GtkWindow* window, GdkEvent* event) {
     update_record_rect(event->configure.x,event->configure.y);
+    return False;
 }
 
 int main(int argc, char** argv) {
@@ -189,18 +210,19 @@ int main(int argc, char** argv) {
 
     window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_default_size((GtkWindow*)window,800,600);
-
     gtk_widget_set_name(window,"window");
+    gtk_window_set_title(window,"peak");
 
     g_signal_connect(GTK_WIDGET(window),"destory",G_CALLBACK(gtk_main_quit),NULL);
-    g_signal_connect(GTK_WIDGET(window),"configure-event",G_CALLBACK(on_window_resize),NULL);
+    g_signal_connect(GTK_WIDGET(window),"configure-event",G_CALLBACK(on_window_move),NULL);
+    g_signal_connect(GTK_WIDGET(window),"key_press_event",G_CALLBACK(on_key_press),NULL);
 
 
     // disable resizing window to stop window managers from making it fullscreen i3 does that 
     // dont worry i set later to true after showing the window
     gtk_window_set_resizable((GtkWindow*)window,false);
 
-    
+
 
 
     GdkScreen *screen;
@@ -212,7 +234,7 @@ int main(int argc, char** argv) {
     if(visual != NULL && gdk_screen_is_composited(screen)) {
         gtk_widget_set_visual(window,visual);
     } else {
-        printf("Failed to init, no composition");
+        printf("Failed to init, no composition\n");
         return 0;
     }
 
@@ -229,11 +251,11 @@ int main(int argc, char** argv) {
 
 
     // record btn
-    GtkWidget* button = gtk_button_new_with_label("Record!");
-    g_signal_connect(GTK_WIDGET(button),"clicked",G_CALLBACK(on_record),NULL);
-    GtkStyleContext* btn_style_ctx = gtk_widget_get_style_context(button);
+    record_button = gtk_button_new_with_label("Record!");
+    g_signal_connect(GTK_WIDGET(record_button),"clicked",G_CALLBACK(on_record),NULL);
+    GtkStyleContext* btn_style_ctx = gtk_widget_get_style_context(record_button);
     gtk_style_context_add_class(btn_style_ctx,"record_btn");
-    gtk_box_pack_start(top_box,button,false,false,0);
+    gtk_box_pack_start(top_box,record_button,false,false,0);
 
 
 
@@ -273,10 +295,13 @@ int main(int argc, char** argv) {
     gtk_widget_set_name(timer_label,"timer_label_not_recording");
     gtk_box_pack_start(top_box,timer_label,false,false,20);
 
-    
+
 
     
     gtk_widget_show_all(window);
+    gdk_window_set_events(gtk_widget_get_window(GTK_WIDGET(window)),GDK_ALL_EVENTS_MASK);
+
+
     gtk_window_set_resizable((GtkWindow*)window,true);
     gtk_main();
 
