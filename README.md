@@ -7,6 +7,7 @@ Peak is a simple screen capture application for **linux**.
 
 # TODO
 - make events propagate like ![Peek](https://github.com/phw/peek)
+- less gif size
 
 # Requiments
 - **gtk+-3.0 , gdk-3.0**: window creation , rendering and screenshot capture
