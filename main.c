@@ -265,7 +265,7 @@ int main(int argc, char** argv) {
     gtk_list_store_append(drop_down_model,&drop_down_model_iter);
     gtk_list_store_set(drop_down_model,&drop_down_model_iter,0,"GIF",-1);
     gtk_list_store_append(drop_down_model,&drop_down_model_iter);
-    gtk_list_store_set(drop_down_model,&drop_down_model_iter,0,"APNG",-1);
+    // gtk_list_store_set(drop_down_model,&drop_down_model_iter,0,"APNG",-1);
     drop_down = gtk_combo_box_new_with_model(drop_down_model);
     g_object_unref(drop_down_model);
     gtk_combo_box_set_active(GTK_COMBO_BOX(drop_down),0);
