@@ -24,11 +24,20 @@ combobox>window.popup *{
 #top_bar {
     background: white;
     padding: 10px;
+    width: fit-content;
 }
+
+#timer_label_not_recording {
+    color: grey;
+}
+
+
 
 
 .record_btn { 
     background: white;
+    width: 100px;
+    height: 100px;
 }
 
 #record_btn_recording {

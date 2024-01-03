@@ -3,7 +3,7 @@
 #include <pthread.h>
 #include <gtk-3.0/gtk/gtk.h>
 #include <X11/Xlib.h>
-
+#include <time.h>
 
 // types
 typedef struct ScreenRect {
@@ -34,6 +34,10 @@ static const int y_offset_bottom = 0;
 GtkWidget* window;
 GtkWidget* box;
 GtkWidget* top_box;
+GtkWidget* timer_label;
+
+time_t start_record_time;
+struct tm* time_info;
 
 void load_css() {
     // load css to use it for styling
@@ -55,12 +59,32 @@ void take_screenshot(char* fp,ScreenRect rect) {
     buf = gdk_pixbuf_get_from_window(gdk_get_default_root_window(),rect.x,rect.y,rect.w,rect.h);
     gdk_pixbuf_save(buf,fp,"png",NULL,NULL);
 }
+
+bool modify_time() {
+    time_t cur_time;
+    time(&cur_time);
+    cur_time -= start_record_time;
+    time_info = localtime(&cur_time);
+    char time_str[5];
+    sprintf(time_str,"%02d:%02d",time_info->tm_min,time_info->tm_sec);    
+
+    gtk_label_set_text( timer_label,time_str);
+
+
+
+    if(is_recording) {return true;}
+    return false;
+}
 void* record() {
     char file_name[256];
+
+    // its not intended to last more then a hour
+    
     while (is_recording){
-        sprintf(file_name,"output/%d.png",cur_img_idx);
-        take_screenshot(file_name,record_rect);
-        cur_img_idx += 1;
+        // sprintf(file_name,"output/%d.png",cur_img_idx);
+        // take_screenshot(file_name,record_rect);
+        // cur_img_idx += 1;
+        // g_usleep(20 * 1000);
     }
 
     pthread_exit(EXIT_SUCCESS);
@@ -94,18 +118,27 @@ void on_record(GtkButton* widget ,GtkEntry* entry) {
 
         gtk_button_set_label(widget,"Recording...");
         gtk_widget_set_name(widget, "record_btn_recording");
+        
+        gtk_widget_set_name(timer_label,"");
 
+        // record timer
+        time(&start_record_time);
+        g_timeout_add_seconds(1,modify_time,NULL);
 
 
         // disable window resizing 
         gtk_window_set_resizable(window,false);
-
-        // pthread_create(&recording_thread,NULL,record,NULL);
+        pthread_create(&recording_thread,NULL,record,NULL);
     } else {
         is_recording = false;
 
         gtk_button_set_label(widget,"Record!");
         gtk_widget_set_name(widget, "");
+        gtk_widget_set_name(timer_label,"timer_label_not_recording");
+
+        
+        // enable window resizing
+        gtk_window_set_resizable(window,true);
     }
 
 }
@@ -155,18 +188,23 @@ int main(int argc, char** argv) {
 
 
     // global container for layout stuff
-    box = gtk_box_new(GTK_ORIENTATION_VERTICAL,0);    
+    GtkWidget* box = gtk_box_new(GTK_ORIENTATION_VERTICAL,0);
     gtk_container_add(GTK_CONTAINER(window),box);
 
-    // top container
-    top_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0);
+    GtkWidget* top_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0);
     gtk_widget_set_name(top_box, "top_bar");
+    gtk_box_pack_start(box,top_box,false,false,0);
 
+
+
+    // record btn
     GtkWidget* button = gtk_button_new_with_label("Record!");
     g_signal_connect(GTK_WIDGET(button),"clicked",G_CALLBACK(on_record),NULL);
     GtkStyleContext* btn_style_ctx = gtk_widget_get_style_context(button);
     gtk_style_context_add_class(btn_style_ctx,"record_btn");
-    
+    gtk_box_pack_start(top_box,button,false,false,0);
+
+
 
     // drop down menu to select output file type
     GtkTreeModel* drop_down_model = gtk_list_store_new(1,G_TYPE_STRING);
@@ -175,14 +213,15 @@ int main(int argc, char** argv) {
     gtk_list_store_set(drop_down_model,&drop_down_model_iter,0,"GIF",-1);
     gtk_list_store_append(drop_down_model,&drop_down_model_iter);
     gtk_list_store_set(drop_down_model,&drop_down_model_iter,0,"APNG",-1);
-
     GtkWidget* drop_down = gtk_combo_box_new_with_model(drop_down_model);
     g_object_unref(drop_down_model);
-
     gtk_combo_box_set_active(GTK_COMBO_BOX(drop_down),0);
     GtkCellRenderer * renderer = gtk_cell_renderer_text_new ();
     gtk_cell_layout_pack_start (GTK_CELL_LAYOUT (drop_down), renderer, false);
     gtk_cell_layout_set_attributes (GTK_CELL_LAYOUT (drop_down), renderer, "text", 0, NULL);    
+    gtk_box_pack_end(top_box,drop_down,false,false,0);
+
+
 
     // fps entry
     GtkWidget* fps_entry = gtk_entry_new();
@@ -190,22 +229,29 @@ int main(int argc, char** argv) {
     gtk_entry_set_max_width_chars(fps_entry,3);
     GtkWidget* fps_label = gtk_label_new("FPS:");
     gtk_entry_set_text(fps_entry,"50");
-
     GtkWidget* fps_container = gtk_grid_new();
     gtk_grid_attach(fps_container,fps_entry,1,0,1,1);
     gtk_grid_attach(fps_container,fps_label,0,0,1,1);
     gtk_grid_set_column_spacing(fps_container,10);
+    gtk_box_pack_end(top_box,fps_container,false,false,0);
+
     
-    
+
+    //timer label
+    timer_label = gtk_label_new("00:00");
+    gtk_widget_set_name(timer_label,"timer_label_not_recording");
+    gtk_box_pack_start(top_box,timer_label,false,false,20);
+
+
     
 
 
-    gtk_box_pack_start((GtkBox*)top_box,button,false,false,0);
-    gtk_box_pack_end((GtkBox*)top_box,drop_down,false,false,0);
-    gtk_box_pack_end((GtkBox*)top_box,fps_container,false,false,0);
+    // gtk_box_pack_start((GtkBox*)top_box,button,false,false,0);
+    // gtk_box_pack_end((GtkBox*)top_box,drop_down,false,false,0);
+    // gtk_box_pack_end((GtkBox*)top_box,fps_container,false,false,0);
     // gtk_box_pack_end((GtkBox*)top_box,fps_label,false,false,0);
 
-    gtk_box_pack_start((GtkBox*)box,top_box,false,true,0);
+    // gtk_box_pack_start((GtkBox*)box,top_box,false,true,0);
 
 
 
