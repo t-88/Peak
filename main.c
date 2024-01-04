@@ -2,9 +2,10 @@
 #include <stdbool.h>
 #include <time.h>
 #include <string.h>
-#include <pthread.h>
 #include <gtk-3.0/gtk/gtk.h>
-#include <X11/Xlib.h>
+
+#include <pthread.h>
+
 
 // types
 typedef struct ScreenRect {
@@ -196,12 +197,14 @@ gboolean on_key_press(GtkWidget* widget,GdkEventKey* event) {
         gtk_button_clicked(record_button);
     }
 
-    return FALSE;
+    return false;
 }
 gboolean on_window_move(GtkWindow* window, GdkEvent* event) {
     update_record_rect(event->configure.x,event->configure.y);
-    return False;
+    return false;
 }
+
+
 
 int main(int argc, char** argv) {
     XInitThreads();
