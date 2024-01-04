@@ -201,6 +201,7 @@ gboolean on_key_press(GtkWidget* widget,GdkEventKey* event) {
 }
 gboolean on_window_move(GtkWindow* window, GdkEvent* event) {
     update_record_rect(event->configure.x,event->configure.y);
+    gtk_window_set_default_size(window,event->configure.width,event->configure.height);
     return false;
 }
 
